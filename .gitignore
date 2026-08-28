@@ -1,0 +1,6 @@
+*.bak
+*.swp
+.DS_Store
+
+# Local design notes, not for publication
+kid-computing-curriculum-content.md

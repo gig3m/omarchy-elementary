@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "id": "elementary",
+  "name": "Elementary",
+  "version": "0.1.0",
+  "author": "Kyle Arrington <kyle@arrington.co>",
+  "license": "MIT",
+  "description": "A reading window for learning the computer. Curriculum lives in a git repo you own or fork; the plugin renders it beside the terminal and remembers what has been read.",
+  "kinds": [
+    "service",
+    "bar-widget",
+    "panel"
+  ],
+  "keepLoaded": false,
+  "entryPoints": {
+    "service": "Service.qml",
+    "barWidget": "BarWidget.qml",
+    "panel": "App.qml"
+  },
+  "barWidget": {
+    "displayName": "Elementary",
+    "description": "Where you are in the curriculum; click to open the reader beside your terminal.",
+    "category": "Education",
+    "aliases": ["elementary", "curriculum", "lessons", "learn", "teach", "school"],
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "source": "",
+      "branch": "main",
+      "autoSync": "On",
+      "syncIntervalMin": 60,
+      "readingSize": "Large"
+    },
+    "schema": [
+      {
+        "key": "source",
+        "type": "string",
+        "label": "Curriculum source",
+        "defaultValue": "",
+        "description": "A git URL to clone, or a path to a folder on this machine. A local path is read in place and never pulled, so you can write lessons and see them immediately."
+      },
+      {
+        "key": "branch",
+        "type": "string",
+        "label": "Branch",
+        "defaultValue": "main",
+        "description": "Only used when the source is a git URL."
+      },
+      {
+        "key": "autoSync",
+        "type": "enum",
+        "label": "Pull new lessons automatically",
+        "options": ["On", "Off"],
+        "defaultValue": "On",
+        "description": "Fast-forward pulls only. If the network is down the last-cloned copy keeps working."
+      },
+      {
+        "key": "syncIntervalMin",
+        "type": "integer",
+        "label": "Check for new lessons every (minutes)",
+        "min": 5,
+        "max": 1440,
+        "step": 5,
+        "defaultValue": 60
+      },
+      {
+        "key": "readingSize",
+        "type": "enum",
+        "label": "Reading size",
+        "options": ["Normal", "Large", "Extra large"],
+        "defaultValue": "Large",
+        "description": "Body text size in the reader window."
+      }
+    ]
+  }
+}
