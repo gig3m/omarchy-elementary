@@ -61,7 +61,11 @@ Item {
     return e && (key in e) && e[key] !== "" && e[key] !== null ? e[key] : fallback
   }
 
-  readonly property string source: String(setting("source", ""))
+  // Named `curriculum`, not `source`: a bar layout entry carrying a `source`
+  // key is claimed by the bar as a custom QML module (BarModel.customModuleType),
+  // which discards the registered plugin widget and tries to load the value as
+  // a QML file. `exec` and `type` are reserved the same way.
+  readonly property string source: String(setting("curriculum", ""))
   readonly property string branch: String(setting("branch", "main"))
   readonly property bool autoSync: String(setting("autoSync", "On")) !== "Off"
   readonly property int syncIntervalMin: Math.max(5, Number(setting("syncIntervalMin", 60)) || 60)

@@ -21,11 +21,18 @@
     "displayName": "Elementary",
     "description": "Where you are in the curriculum; click to open the reader beside your terminal.",
     "category": "Education",
-    "aliases": ["elementary", "curriculum", "lessons", "learn", "teach", "school"],
+    "aliases": [
+      "elementary",
+      "curriculum",
+      "lessons",
+      "learn",
+      "teach",
+      "school"
+    ],
     "allowMultiple": false,
     "defaultSection": "right",
     "defaults": {
-      "source": "",
+      "curriculum": "",
       "branch": "main",
       "autoSync": "On",
       "syncIntervalMin": 60,
@@ -33,9 +40,9 @@
     },
     "schema": [
       {
-        "key": "source",
+        "key": "curriculum",
         "type": "string",
-        "label": "Curriculum source",
+        "label": "Curriculum",
         "defaultValue": "",
         "description": "A git URL to clone, or a path to a folder on this machine. A local path is read in place and never pulled, so you can write lessons and see them immediately."
       },
@@ -50,7 +57,10 @@
         "key": "autoSync",
         "type": "enum",
         "label": "Pull new lessons automatically",
-        "options": ["On", "Off"],
+        "options": [
+          "On",
+          "Off"
+        ],
         "defaultValue": "On",
         "description": "Fast-forward pulls only. If the network is down the last-cloned copy keeps working."
       },
@@ -67,7 +77,11 @@
         "key": "readingSize",
         "type": "enum",
         "label": "Reading size",
-        "options": ["Normal", "Large", "Extra large"],
+        "options": [
+          "Normal",
+          "Large",
+          "Extra large"
+        ],
         "defaultValue": "Large",
         "description": "Body text size in the reader window."
       }

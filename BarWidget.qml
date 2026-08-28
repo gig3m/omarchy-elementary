@@ -46,15 +46,15 @@ BarWidget {
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
 
-  BarIconButton {
+  // WidgetButton, not BarIconButton: the latter renders its text as a single
+  // optical glyph inside a fixed square slot, which silently squashes a
+  // multi-character label into an icon canvas and shows nothing. The count is
+  // the point of this widget, so it needs a real text label that sizes to it.
+  WidgetButton {
     id: button
     anchors.fill: parent
     bar: root.bar
-    // Open book. The label carries the count, so the glyph stays constant and
-    // the widget never changes width as he works through a section.
-    text: "󰂺  " + root.label
-    slotSize: Style.bar.statusSlot
-    fontSize: Style.font.caption
+    text: "\u{f00ba}  " + root.label
     tooltipText: root.tooltip
     // Highlighted only when something needs attention — an unconfigured or
     // broken curriculum. Ordinary progress is not an alarm.

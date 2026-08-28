@@ -117,7 +117,7 @@ active Omarchy theme, so a lesson never sets one.
 
 ## Pointing the plugin at a repo
 
-In the bar widget's settings, set **Curriculum source** to either:
+In the bar widget's settings, set **Curriculum** to either:
 
 - a git URL — cloned once into `~/.local/share/elementary/curriculum`, then
   fast-forwarded on the schedule set by **Check for new lessons every**; or

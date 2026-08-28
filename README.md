@@ -35,7 +35,7 @@ Two commands. The first installs the reader, the second tells it what to read:
 
 ```bash
 omarchy plugin add https://github.com/gig3m/omarchy-elementary.git --enable --yes
-omarchy bar set elementary source https://github.com/gig3m/elementary-curriculum.git
+omarchy bar set elementary curriculum https://github.com/gig3m/elementary-curriculum.git
 ```
 
 The curriculum is cloned on the next check and the reader picks it up without a
@@ -46,20 +46,20 @@ Requires Omarchy with `omarchy-shell`, and `git` for a URL source.
 ### Reading your own course
 
 Fork [elementary-curriculum](https://github.com/gig3m/elementary-curriculum),
-or start an empty repo with a `course.json` at its root, and set `source` to it:
+or start an empty repo with a `course.json` at its root, and set `curriculum` to it:
 
 ```bash
-omarchy bar set elementary source https://github.com/you/your-curriculum.git
+omarchy bar set elementary curriculum https://github.com/you/your-curriculum.git
 ```
 
 ### Writing lessons
 
-Point `source` at a folder instead of a URL. A local path is read in place and
+Point `curriculum` at a folder instead of a URL. A local path is read in place and
 never pulled, so each save shows up in the reader immediately:
 
 ```bash
 git clone https://github.com/you/your-curriculum.git ~/Projects/my-curriculum
-omarchy bar set elementary source ~/Projects/my-curriculum
+omarchy bar set elementary curriculum ~/Projects/my-curriculum
 ```
 
 ### Hacking on the plugin
@@ -76,6 +76,15 @@ Editing a file under `~/.config/omarchy/plugins/` hot-reloads plugin code, but
 a panel that is already open keeps its old component — run
 `omarchy-restart-shell` after changing the reader window itself.
 
+**Reserved setting keys.** A bar layout entry carrying `source`, `exec`, or
+`type` is claimed by the bar as a *custom module*
+([`BarModel.customModuleType`](https://github.com/basecamp/omarchy)), which
+discards the registered plugin widget and tries to load the value as a QML
+file. The widget then silently never appears — no error, and the plugin's
+service and panel keep working, so it looks like a rendering bug rather than a
+name collision. This plugin's curriculum setting is called `curriculum` for
+exactly that reason.
+
 ### Uninstall
 
 ```bash
@@ -91,7 +100,7 @@ The full content contract is in [docs/content-format.md](docs/content-format.md)
 
 | Setting | Default | Meaning |
 |---------|---------|---------|
-| Curriculum source | — | Git URL, or a folder on this machine |
+| Curriculum | — | Git URL, or a folder on this machine |
 | Branch | `main` | Only used for git URLs |
 | Pull new lessons automatically | On | Fast-forward only; offline keeps working |
 | Check for new lessons every | 60 min | |
