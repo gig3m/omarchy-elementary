@@ -39,7 +39,37 @@ omarchy bar set elementary curriculum https://github.com/gig3m/elementary-curric
 ```
 
 The curriculum is cloned on the next check and the reader picks it up without a
-restart. Click the bar widget, or bind a key to `omarchy-shell elementary open`.
+restart.
+
+### Opening it
+
+Click the `󰂺 0/22` widget in the bar, or:
+
+```bash
+omarchy-shell shell summon elementary '{}'
+```
+
+To put it in the Omarchy menu, add a row to
+`~/.config/omarchy/extensions/omarchy-menu.jsonc`:
+
+```jsonc
+"elementary": {
+  "icon": "󰂺",
+  "label": "Elementary",
+  "aliases": ["learn", "lessons", "curriculum", "school"],
+  "description": "Open the lesson reader",
+  "action": "omarchy-shell shell summon elementary '{}'"
+}
+```
+
+Or bind a key in `~/.config/hypr/bindings.conf`:
+
+```
+bindd = SUPER, E, Elementary, exec, omarchy-shell shell summon elementary '{}'
+```
+
+A shell plugin is not a `.desktop` application, so it will not appear in the
+app launcher on its own — the menu row above is how it becomes searchable.
 
 Requires Omarchy with `omarchy-shell`, and `git` for a URL source.
 
