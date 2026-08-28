@@ -65,11 +65,64 @@ Item {
   // key is claimed by the bar as a custom QML module (BarModel.customModuleType),
   // which discards the registered plugin widget and tries to load the value as
   // a QML file. `exec` and `type` are reserved the same way.
-  readonly property string source: String(setting("curriculum", ""))
+  //
+  // `source` is still read as a fallback so a config written before the rename
+  // keeps showing lessons while the migration below repairs it.
+  readonly property string source: String(setting("curriculum", "") || setting("source", ""))
   readonly property string branch: String(setting("branch", "main"))
   readonly property bool autoSync: String(setting("autoSync", "On")) !== "Off"
   readonly property int syncIntervalMin: Math.max(5, Number(setting("syncIntervalMin", 60)) || 60)
   readonly property string readingSize: String(setting("readingSize", "Large"))
+
+  // ----------------------------------------------------------- migration
+
+  // Configs written before the setting was renamed carry `source`, which the
+  // bar claims for custom QML modules — the widget is then silently dropped
+  // and no amount of updating the plugin brings it back, because the stale key
+  // lives in shell.json rather than in the plugin.
+  //
+  // `omarchy bar set` cannot fix it either: it merges into the existing entry,
+  // so the poisoned key survives. updateEntryInline replaces the entry
+  // outright, which is what actually removes it.
+  property bool migrationChecked: false
+
+  readonly property var settingKeys: ["curriculum", "branch", "autoSync",
+    "syncIntervalMin", "readingSize"]
+
+  function migrateLegacySettings() {
+    if (root.migrationChecked) return
+    var entry = root.settingsEntry
+    // The config may not have been read yet; try again when it changes.
+    if (!entry) return
+    root.migrationChecked = true
+
+    var reserved = ["source", "exec", "type"]
+    var poisoned = false
+    for (var r = 0; r < reserved.length; r++)
+      if (entry[reserved[r]] !== undefined) poisoned = true
+    if (!poisoned) return
+
+    if (!root.shell || typeof root.shell.updateEntryInline !== "function") {
+      console.warn("elementary: shell.json carries a reserved `source` key, which hides"
+        + " the bar widget, and this shell offers no way to rewrite the entry."
+        + " Remove `source` from the elementary entry by hand.")
+      return
+    }
+
+    var next = ({})
+    for (var i = 0; i < root.settingKeys.length; i++) {
+      var key = root.settingKeys[i]
+      if (entry[key] !== undefined) next[key] = entry[key]
+    }
+    // Carry the old value across rather than dropping the user's curriculum.
+    if (!next.curriculum && entry.source) next.curriculum = String(entry.source)
+
+    root.shell.updateEntryInline("elementary", next)
+    console.log("elementary: removed a reserved `source` key from shell.json"
+      + " and moved its value to `curriculum`; the bar widget can render now.")
+  }
+
+  onSettingsEntryChanged: Qt.callLater(root.migrateLegacySettings)
 
   // ------------------------------------------------------------- curriculum
 
@@ -143,7 +196,10 @@ Item {
   }
 
   // Even with auto-sync off the curriculum still has to be located once.
-  Component.onCompleted: Qt.callLater(root.resync)
+  Component.onCompleted: {
+    Qt.callLater(root.migrateLegacySettings)
+    Qt.callLater(root.resync)
+  }
 
   FileView {
     id: courseFile

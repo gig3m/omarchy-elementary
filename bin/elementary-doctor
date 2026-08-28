@@ -1,0 +1,187 @@
+#!/usr/bin/env bash
+# Check an Elementary install and repair the one thing that silently breaks it.
+#
+# The failure this exists for: a bar layout entry carrying a `source`, `exec`,
+# or `type` key is claimed by the Omarchy bar as a custom QML module. The
+# registered plugin widget is discarded and the bar tries to load the value as
+# a QML file, so the widget vanishes with no error while the service and the
+# reader window keep working. `omarchy bar set` cannot undo it — it merges into
+# the existing entry, so the offending key survives.
+#
+#   elementary-doctor         report only
+#   elementary-doctor --fix   rewrite the entry, removing reserved keys
+#
+# Safe to run repeatedly. Writes a timestamped backup before touching anything.
+
+set -uo pipefail
+
+FIX=0
+[[ "${1:-}" == "--fix" ]] && FIX=1
+
+CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/shell.json"
+PLUGIN_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/plugins/elementary"
+STATE="${XDG_STATE_HOME:-$HOME/.local/state}/elementary"
+CACHE="${XDG_DATA_HOME:-$HOME/.local/share}/elementary/curriculum"
+
+ok()   { printf '  \033[32mok\033[0m    %s\n' "$1"; }
+bad()  { printf '  \033[31mFAIL\033[0m  %s\n' "$1"; }
+warn() { printf '  \033[33mwarn\033[0m  %s\n' "$1"; }
+note() { printf '        %s\n' "$1"; }
+
+problems=0
+
+echo
+echo "Elementary — install check"
+echo
+
+# ---------------------------------------------------------------- the plugin
+
+if [[ -d "$PLUGIN_DIR" ]]; then
+  ok "plugin installed at $PLUGIN_DIR"
+  if [[ -f "$PLUGIN_DIR/manifest.json" ]]; then
+    version="$(python3 -c "import json;print(json.load(open('$PLUGIN_DIR/manifest.json')).get('version','?'))" 2>/dev/null)"
+    ok "manifest reads, version $version"
+  else
+    bad "no manifest.json — the plugin folder is incomplete"; problems=$((problems+1))
+  fi
+  for f in Service.qml BarWidget.qml App.qml; do
+    [[ -f "$PLUGIN_DIR/$f" ]] || { bad "missing $f"; problems=$((problems+1)); }
+  done
+  # Migration lives in the service; without it an old copy cannot self-repair.
+  if [[ -f "$PLUGIN_DIR/Service.qml" ]] && ! grep -q "migrateLegacySettings" "$PLUGIN_DIR/Service.qml" 2>/dev/null; then
+    warn "this copy predates the self-repair; run: omarchy plugin update elementary"
+  fi
+else
+  bad "not installed — expected $PLUGIN_DIR"
+  note "omarchy plugin add https://github.com/gig3m/omarchy-elementary.git --enable --yes"
+  problems=$((problems+1))
+fi
+
+# ---------------------------------------------------------------- the config
+
+if [[ ! -f "$CONFIG" ]]; then
+  bad "no $CONFIG"
+  problems=$((problems+1))
+else
+  report="$(FIX=$FIX CONFIG="$CONFIG" python3 - <<'PY'
+import json, os, shutil, sys, time
+
+config = os.environ["CONFIG"]
+fix = os.environ["FIX"] == "1"
+RESERVED = ("source", "exec", "type")
+KEEP = ("curriculum", "branch", "autoSync", "syncIntervalMin", "readingSize")
+
+try:
+    doc = json.load(open(config))
+except Exception as exc:
+    print("FAIL|shell.json is not valid JSON: %s" % exc)
+    sys.exit(0)
+
+layout = (doc.get("bar") or {}).get("layout") or {}
+found = None
+for section, entries in layout.items():
+    if not isinstance(entries, list):
+        continue
+    for index, entry in enumerate(entries):
+        if isinstance(entry, dict) and entry.get("id") == "elementary":
+            found = (section, index, entry)
+
+if found is None:
+    for index, entry in enumerate(doc.get("plugins") or []):
+        if isinstance(entry, dict) and entry.get("id") == "elementary":
+            found = ("plugins", index, entry)
+
+if found is None:
+    print("FAIL|not on the bar. Run: omarchy plugin enable elementary right")
+    sys.exit(0)
+
+section, index, entry = found
+print("OK|on the bar, in the %s section" % section)
+
+bad_keys = [k for k in RESERVED if k in entry]
+value = entry.get("curriculum") or ""
+
+if bad_keys:
+    print("FAIL|reserved key(s) present: %s — this is what hides the widget"
+          % ", ".join(bad_keys))
+    if not value and entry.get("source"):
+        value = entry["source"]
+    if fix:
+        shutil.copy2(config, "%s.bak.%d" % (config, int(time.time())))
+        clean = {"id": "elementary"}
+        for key in KEEP:
+            if key in entry:
+                clean[key] = entry[key]
+        if value:
+            clean["curriculum"] = value
+        if section == "plugins":
+            doc["plugins"][index] = clean
+        else:
+            layout[section][index] = clean
+        json.dump(doc, open(config, "w"), indent=2)
+        print("FIXED|removed %s; curriculum = %s"
+              % (", ".join(bad_keys), value or "(unset)"))
+else:
+    print("OK|no reserved keys on the entry")
+
+if value:
+    print("OK|curriculum = %s" % value)
+else:
+    print("FAIL|no curriculum set. Run: omarchy bar set elementary curriculum <url-or-path>")
+PY
+)"
+  while IFS='|' read -r status message; do
+    case "$status" in
+      OK)    ok "$message" ;;
+      FIXED) ok "repaired: $message" ;;
+      FAIL)  bad "$message"; problems=$((problems+1)) ;;
+      *)     [[ -n "$status" ]] && note "$status" ;;
+    esac
+  done <<< "$report"
+fi
+
+# ---------------------------------------------------------------- the content
+
+if [[ -d "$CACHE" ]]; then
+  count=$(find "$CACHE" -name '*.md' 2>/dev/null | wc -l)
+  ok "downloaded curriculum present, $count lesson files"
+fi
+if [[ -f "$STATE/progress.json" ]]; then
+  read_count=$(python3 -c "
+import json
+try: print(len(json.load(open('$STATE/progress.json')).get('completed',{})))
+except Exception: print(0)" 2>/dev/null)
+  ok "progress kept, $read_count lesson(s) read"
+else
+  note "no progress recorded yet"
+fi
+
+# ---------------------------------------------------------------- the shell
+
+if command -v omarchy-shell >/dev/null 2>&1; then
+  if [[ "$(omarchy-shell shell ping 2>/dev/null)" == "ok" ]]; then
+    ok "omarchy-shell is running"
+    status="$(omarchy-shell elementary status 2>/dev/null)"
+    if [[ -n "$status" ]]; then
+      ok "service answering: $status"
+    else
+      bad "the service is not answering — the plugin may not be enabled"
+      problems=$((problems+1))
+    fi
+  else
+    warn "omarchy-shell is not running"
+  fi
+fi
+
+echo
+if [[ $problems -eq 0 ]]; then
+  echo "  Nothing wrong. If the widget still is not visible, restart the shell:"
+  echo "    omarchy-restart-shell"
+elif [[ $FIX -eq 1 ]]; then
+  echo "  Repairs written. Apply them with:"
+  echo "    omarchy-restart-shell"
+else
+  echo "  $problems problem(s). Re-run with --fix to repair what can be repaired:"
+  echo "    elementary-doctor --fix && omarchy-restart-shell"
+fi
+echo

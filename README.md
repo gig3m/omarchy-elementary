@@ -85,6 +85,35 @@ service and panel keep working, so it looks like a rendering bug rather than a
 name collision. This plugin's curriculum setting is called `curriculum` for
 exactly that reason.
 
+### When the bar widget is missing
+
+The widget can vanish with no error while the reader and the service keep
+working. Almost always this is one cause: the plugin's entry in `shell.json`
+carries a `source`, `exec`, or `type` key. Those are **reserved** — the bar
+treats such an entry as a custom QML module, throws away the registered plugin
+widget, and tries to load the value as a QML file.
+
+Versions before 0.2.0 named this plugin's setting `source`, so any config
+written against them is affected. `omarchy bar set` will not fix it: it merges
+into the existing entry, leaving the offending key in place.
+
+Updating the plugin repairs it automatically on the next shell start:
+
+```bash
+omarchy plugin update elementary
+omarchy-restart-shell
+```
+
+To inspect or repair without relying on the plugin loading:
+
+```bash
+~/.config/omarchy/plugins/elementary/bin/elementary-doctor          # report
+~/.config/omarchy/plugins/elementary/bin/elementary-doctor --fix    # repair
+omarchy-restart-shell
+```
+
+`--fix` backs up `shell.json` before writing.
+
 ### Uninstall
 
 ```bash
@@ -146,6 +175,7 @@ lessons but not someone else's checkmarks.
 | `Progress.js` | Pure model: the read record |
 | `scripts/curriculum-sync.sh` | Resolves a source to a directory on disk |
 | `scripts/state-store.sh` | The plugin's only write path, atomic |
+| `bin/elementary-doctor` | Checks an install; repairs a poisoned `shell.json` entry |
 
 The curriculum lives in its own repo, not here: the software and the teaching
 change at different rates and by different hands.

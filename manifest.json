@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "elementary",
   "name": "Elementary",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": "Kyle Arrington <kyle@arrington.co>",
   "license": "MIT",
   "description": "A reading window for learning the computer. Curriculum lives in a git repo you own or fork; the plugin renders it beside the terminal and remembers what has been read.",
