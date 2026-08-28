@@ -31,40 +31,59 @@ can be changed by different people at different times.
 
 ## Install
 
+Two commands. The first installs the reader, the second tells it what to read:
+
 ```bash
 omarchy plugin add https://github.com/gig3m/omarchy-elementary.git --enable --yes
+omarchy bar set elementary source https://github.com/gig3m/elementary-curriculum.git
 ```
 
-Or, to work on it locally:
+The curriculum is cloned on the next check and the reader picks it up without a
+restart. Click the bar widget, or bind a key to `omarchy-shell elementary open`.
+
+Requires Omarchy with `omarchy-shell`, and `git` for a URL source.
+
+### Reading your own course
+
+Fork [elementary-curriculum](https://github.com/gig3m/elementary-curriculum),
+or start an empty repo with a `course.json` at its root, and set `source` to it:
 
 ```bash
-ln -s "$PWD" ~/.config/omarchy/plugins/elementary
+omarchy bar set elementary source https://github.com/you/your-curriculum.git
+```
+
+### Writing lessons
+
+Point `source` at a folder instead of a URL. A local path is read in place and
+never pulled, so each save shows up in the reader immediately:
+
+```bash
+git clone https://github.com/you/your-curriculum.git ~/Projects/my-curriculum
+omarchy bar set elementary source ~/Projects/my-curriculum
+```
+
+### Hacking on the plugin
+
+```bash
+git clone https://github.com/gig3m/omarchy-elementary.git ~/Projects/elementary
+ln -s ~/Projects/elementary ~/.config/omarchy/plugins/elementary
 omarchy plugin validate ~/.config/omarchy/plugins/elementary
 omarchy-shell shell rescanPlugins
 omarchy plugin enable elementary
 ```
 
-Saving any file under `~/.config/omarchy/plugins/` hot-reloads the plugin, so
-the symlink is the whole dev loop.
+Editing a file under `~/.config/omarchy/plugins/` hot-reloads plugin code, but
+a panel that is already open keeps its old component — run
+`omarchy-restart-shell` after changing the reader window itself.
 
-## Point it at a curriculum
+### Uninstall
 
-Open the bar widget's settings and set **Curriculum source** to a git URL, or
-to a folder on this machine. A local folder is read in place and never pulled —
-that is the path for writing lessons, and the reader picks up each save
-immediately.
-
-[elementary-curriculum](https://github.com/gig3m/elementary-curriculum) is the
-reference course — five sections, twenty-two lessons, aimed at a child moving
-off an iPad. Point the setting straight at it:
-
-```
-https://github.com/gig3m/elementary-curriculum.git
+```bash
+omarchy plugin disable elementary     # off the bar, code left in place
+omarchy plugin remove elementary      # and gone
 ```
 
-To write your own, fork that repo (or start an empty one with a `course.json`),
-clone it, and point the setting at the clone's path — a local folder is read in
-place, so each save shows up immediately.
+Progress in `~/.local/state/elementary/` survives both; delete it to start over.
 
 The full content contract is in [docs/content-format.md](docs/content-format.md).
 
