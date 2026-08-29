@@ -23,7 +23,7 @@ can be changed by different people at different times.
 
 - Renders a markdown curriculum from a git repo, one lesson at a time —
   headings, emphasis, lists, tables and links, plus `==highlights==`,
-  `> [!callouts]`, and code blocks on their own selectable surface.
+  `> [!callouts]`, pictures, and code blocks on their own selectable surface.
 - Remembers what has been read, and where you left off.
 - Shows progress in the bar; click it to open the reader.
 - Nothing is locked. Progress is a record, not a gate — everything is

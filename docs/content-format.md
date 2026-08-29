@@ -89,6 +89,7 @@ lesson still reads correctly on GitHub or in Obsidian.
 | `==marked==` | **Highlight.** Painted in the theme's accent |
 | ```` ```lang ```` | **Code block.** Its own surface, and selectable |
 | `> [!kind] Title` | **Callout.** An aside with a coloured bar |
+| `![alt](path)` | **Picture.** On a line of its own; alt becomes the caption |
 
 The last three are extensions on top of what Qt renders natively. Highlights
 may straddle one line break, so a marked phrase can wrap normally in the
@@ -104,16 +105,35 @@ rather than leaking `[!whatever]` onto the page:
 | `example` | Example | accent |
 | `warning` `caution` | Careful | urgent |
 | `danger` | Stop | urgent |
+| `machine` | On your computer | neutral |
 
 The text after the kind replaces that label, so `> [!warning] Leave the
 extension alone` is titled with the sentence rather than "Careful".
 
+`machine` exists for a course that teaches both how computers work in general
+and how one particular machine works. Keep the general idea in the prose and
+the specific keystroke in the box; on a different machine, the boxes are
+exactly what needs rewriting.
+
 A `>` quote with no `[!kind]` stays an ordinary block quote.
+
+### Pictures
+
+`![alt text](../images/thing.png)` on a line of its own. The path is relative
+to the lesson file, as in any other markdown tool, so the same file renders
+here, on GitHub, and in Obsidian. Absolute paths and `https://` URLs also work.
+
+An image is only recognised on a line of its own — inside a paragraph it stays
+in the prose, where Qt drops it. Alt text becomes a caption under the picture.
+A picture that cannot be found says so, naming the path, rather than leaving a
+gap.
+
+Pictures are never scaled up past their own resolution.
 
 ### What does not render
 
-Images, raw HTML, footnotes, and `[[wikilinks]]`. Colours always come from the
-active Omarchy theme, so a lesson never sets one.
+Raw HTML, footnotes, and `[[wikilinks]]`. Colours always come from the active
+Omarchy theme, so a lesson never sets one.
 
 ## Pointing the plugin at a repo
 

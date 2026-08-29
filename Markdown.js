@@ -10,6 +10,7 @@
 //   ==highlight==   the thing on the page he is meant to notice
 //   > [!note]       an aside that is not part of the main thread
 //   ```fenced```    a command to type, which must not look like prose
+//   ![alt](path)    a picture, which Qt's markdown drops entirely
 //
 // The first is inline, and is added by rewriting it as an HTML span — Qt does
 // pass inline HTML through in markdown mode.
@@ -65,6 +66,11 @@ var CALLOUTS = {
   caution:   { label: "Careful",   tone: "urgent" },
   danger:    { label: "Stop",      tone: "urgent" },
   question:  { label: "Try it",    tone: "accent" },
+  // The course teaches how computers work in general and how this one works in
+  // particular. Keeping the specific half in its own box stops the two from
+  // blurring into hedged prose, and makes the part that changes on a different
+  // machine the part that is visually separable.
+  machine:   { label: "On your computer", tone: "machine" },
   example:   { label: "Example",   tone: "accent" }
 }
 
@@ -79,11 +85,16 @@ function unwrap(text) {
   return text.replace(/^[\s]*#[ \t]+[^\n]*(\r?\n)+/, "")
 }
 
-// Returns [{ kind: "prose" | "code" | "callout", ... }] in document order.
+// Returns [{ kind: "prose" | "code" | "callout" | "image", ... }] in order.
 //
 //   prose    { kind, text }                  handed to Text.MarkdownText
 //   code     { kind, language, text }        drawn as a code block
 //   callout  { kind, label, tone, body }     drawn as an aside; body is prose
+//   image    { kind, alt, src }              drawn as a picture with a caption
+//
+// An image is only recognised on a line of its own. Inside a paragraph it
+// stays in the prose, where Qt drops it — teaching material puts pictures
+// between paragraphs, and the alternative is splitting a sentence in three.
 //
 // Runs of ordinary markdown are kept together in one prose block rather than
 // split per paragraph, so lists and tables — which span blank lines — survive.
@@ -114,6 +125,13 @@ function blocks(raw) {
       })
       // j is the closing fence, or the end of the file if it was never closed.
       i = j
+      continue
+    }
+
+    var picture = line.match(/^[ \t]*!\[([^\]]*)\]\(([^)\s]+)(?:[ \t]+"[^"]*")?\)[ \t]*$/)
+    if (picture) {
+      flushProse()
+      out.push({ kind: "image", alt: picture[1], src: picture[2] })
       continue
     }
 

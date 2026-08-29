@@ -76,6 +76,12 @@ Item {
     Color.urgent.r * 0.10 + background.r * 0.90,
     Color.urgent.g * 0.10 + background.g * 0.90,
     Color.urgent.b * 0.10 + background.b * 0.90, 1)
+  // Machine-specific asides are neutral rather than coloured: they are the
+  // concrete half of the lesson, not an alarm and not a tangent.
+  readonly property color calloutMachineFill: Qt.rgba(
+    foreground.r * 0.07 + background.r * 0.93,
+    foreground.g * 0.07 + background.g * 0.93,
+    foreground.b * 0.07 + background.b * 0.93, 1)
 
   readonly property bool ready: !!service && service.ready
   readonly property var sections: service && service.sections ? service.sections : []
@@ -162,6 +168,23 @@ Item {
   property bool bodyMissing: false
 
   readonly property string bodyPath: (service && current) ? service.lessonPath(current) : ""
+
+  // Pictures are written relative to the lesson file, as they are in every
+  // other markdown tool — so `../images/x.png` works the same here, on GitHub,
+  // and in Obsidian.
+  readonly property string bodyDir: {
+    var path = root.bodyPath
+    var cut = path.lastIndexOf("/")
+    return cut > 0 ? path.substring(0, cut) : ""
+  }
+
+  function pictureUrl(src) {
+    var raw = String(src || "")
+    if (!raw) return ""
+    if (/^(https?|qrc|file|data):/.test(raw)) return raw
+    if (raw.charAt(0) === "/") return "file://" + raw
+    return root.bodyDir ? "file://" + root.bodyDir + "/" + raw : ""
+  }
 
   onBodyPathChanged: {
     if (!root.bodyPath) { root.bodyBlocks = []; root.bodyMissing = false }
@@ -474,6 +497,50 @@ Item {
                     }
                   }
 
+                  // ---- a picture
+                  //
+                  // Worth the trouble for a reader this young: a breadboard is
+                  // a photograph, not a paragraph. Qt's markdown drops images
+                  // entirely, so this is a real Image drawn from the block.
+
+                  Column {
+                    visible: modelData.kind === "image"
+                    width: parent.width
+                    spacing: Style.space(4)
+
+                    Image {
+                      id: picture
+                      source: modelData.kind === "image" ? root.pictureUrl(modelData.src) : ""
+                      asynchronous: true
+                      fillMode: Image.PreserveAspectFit
+                      // Never blown up past its own resolution: an upscaled
+                      // diagram is harder to read than a small sharp one.
+                      width: Math.min(parent.width, implicitWidth)
+                      height: implicitWidth > 0
+                        ? implicitHeight * (width / implicitWidth) : 0
+                    }
+
+                    Text {
+                      visible: picture.status === Image.Ready && modelData.alt !== ""
+                      width: parent.width
+                      text: modelData.kind === "image" ? modelData.alt : ""
+                      color: root.dim
+                      font.family: root.fontFamily
+                      font.pixelSize: Math.round(root.bodySize * 0.85)
+                      wrapMode: Text.WordWrap
+                    }
+
+                    Text {
+                      visible: picture.status === Image.Error
+                      width: parent.width
+                      text: "Missing picture: " + (modelData.kind === "image" ? modelData.src : "")
+                      color: Color.urgent
+                      font.family: root.fontFamily
+                      font.pixelSize: Math.round(root.bodySize * 0.85)
+                      wrapMode: Text.WordWrap
+                    }
+                  }
+
                   // ---- an aside
 
                   Rectangle {
@@ -482,14 +549,16 @@ Item {
                     height: visible ? calloutBody.implicitHeight + calloutLabel.implicitHeight
                       + Style.space(26) : 0
                     radius: Style.cornerRadius
-                    color: modelData.tone === "urgent" ? root.calloutUrgentFill : root.calloutFill
+                    color: modelData.tone === "urgent" ? root.calloutUrgentFill
+                      : (modelData.tone === "machine" ? root.calloutMachineFill : root.calloutFill)
 
                     Rectangle {
                       id: calloutBar
                       width: Style.space(3)
                       height: parent.height
                       radius: parent.radius
-                      color: modelData.tone === "urgent" ? Color.urgent : root.accent
+                      color: modelData.tone === "urgent" ? Color.urgent
+                        : (modelData.tone === "machine" ? root.dim : root.accent)
                     }
 
                     Text {
@@ -501,7 +570,8 @@ Item {
                       anchors.right: parent.right
                       anchors.rightMargin: Style.space(12)
                       text: modelData.kind === "callout" ? modelData.label : ""
-                      color: modelData.tone === "urgent" ? Color.urgent : root.accent
+                      color: modelData.tone === "urgent" ? Color.urgent
+                        : (modelData.tone === "machine" ? root.dim : root.accent)
                       font.family: root.fontFamily
                       font.pixelSize: Math.round(root.bodySize * 0.9)
                       font.bold: true
