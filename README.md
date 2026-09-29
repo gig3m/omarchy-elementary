@@ -19,6 +19,8 @@ can be changed by different people at different times.
 └──────────────────────┴──────────────────────┘
 ```
 
+![The Elementary reader: course outline on the left, the first Basics lesson on the right](docs/screenshot.png)
+
 ## What it does
 
 - Renders a markdown curriculum from a git repo, one lesson at a time —
