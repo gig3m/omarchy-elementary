@@ -35,11 +35,18 @@ Item {
   // A service is never handed `settings` — only bar widgets are. Both halves
   // read the same inline entry out of shell.json instead, searching bar.layout
   // before plugins[] because that is the order the shell's own write path uses.
+  //
+  // Third-party plugins get a scoped shell with no `shellConfig`, only
+  // `barConfig`: a copy of shell.json's `bar` section, re-issued on every config
+  // change. That reaches bar.layout but not plugins[], so a plugin-list entry is
+  // only honoured where the full config is exposed.
   readonly property var settingsEntry: {
-    var config = root.shell && root.shell.shellConfig ? root.shell.shellConfig : null
-    if (!config) return null
+    var s = root.shell
+    var config = s && s.shellConfig ? s.shellConfig : null
+    var bar = config ? config.bar : (s && s.barConfig ? s.barConfig : null)
+    if (!config && !bar) return null
     var sections = ["left", "center", "right"]
-    var layout = config.bar && config.bar.layout ? config.bar.layout : null
+    var layout = bar && bar.layout ? bar.layout : null
     if (layout) {
       for (var s = 0; s < sections.length; s++) {
         var arr = layout[sections[s]]
@@ -48,7 +55,7 @@ Item {
           if (arr[i] && String(arr[i].id) === "elementary") return arr[i]
       }
     }
-    if (Array.isArray(config.plugins)) {
+    if (config && Array.isArray(config.plugins)) {
       for (var j = 0; j < config.plugins.length; j++)
         if (config.plugins[j] && String(config.plugins[j].id) === "elementary")
           return config.plugins[j]
